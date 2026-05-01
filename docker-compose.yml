@@ -1,0 +1,16 @@
+version: "3.8"
+
+services:
+  portfolio:
+    build: ./portfolio-app
+    container_name: portfolio-app
+    ports:
+      - "8081:80"
+    restart: always
+
+  javaapp:
+    build: ./java-app
+    container_name: java-app
+    ports:
+      - "8082:8080"
+    restart: always
