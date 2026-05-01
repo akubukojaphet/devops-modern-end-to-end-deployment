@@ -17,19 +17,19 @@ This project implements a complete DevOps pipeline to deploy and manage two appl
 ### 🌐 Portfolio Web Application
 - Built using HTML & CSS  
 - Served via Nginx container  
-- Runs on port 8081  
+- Runs on port **8081**
 
 ### ☕ Java Web Application
 - Built using Java (Vaadin)  
 - Packaged with Maven (WAR file)  
 - Deployed on Tomcat  
-- Runs on port 8082  
+- Runs on port **8082**
 
 ---
 
-# 🧱 Part 1: Infrastructure & Application Deployment
+## 🧱 Part 1: Infrastructure & Application Deployment
 
-## 🐳 Containerization (Docker)
+### 🐳 Containerization (Docker)
 
 Both applications were containerized using Docker.
 
