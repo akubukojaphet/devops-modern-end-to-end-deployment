@@ -37,8 +37,3 @@ Both applications were containerized using Docker.
 
 ```bash
 docker compose up -d --build
----
-
-
-```text
-
