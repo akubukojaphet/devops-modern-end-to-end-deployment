@@ -1,0 +1,9 @@
+*.pem
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+target/
+*.class
+.env
+node_modules/
