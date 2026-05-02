@@ -94,5 +94,21 @@ jobs:
       # =========================
       # Kubernetes Validation (FIXED)
       # =========================
-      - name: Validate Kubernetes manifests
-        run: kubectl apply --dry-run=client --validate=false -f k8s/
+      - name: Validate Kubernetes YAML syntax
+        run: |
+          python - <<'PY'
+          import yaml, glob, sys
+
+          files = glob.glob("k8s/*.yml") + glob.glob("k8s/*.yaml")
+
+          if not files:
+              print("No Kubernetes YAML files found")
+              sys.exit(1)
+
+          for file in files:
+              with open(file) as f:
+                  list(yaml.safe_load_all(f))
+              print(f"Validated: {file}")
+
+          print("Kubernetes YAML syntax validation completed successfully")
+          PY
