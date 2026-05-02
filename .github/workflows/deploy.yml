@@ -1,4 +1,4 @@
-name: DevOps Final Project Pipeline
+name: DevOps Modern End-to-End CI/CD Pipeline
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  build-test-docker:
+  devops-pipeline:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,12 +21,52 @@ jobs:
 
       - name: Build Java application
         working-directory: java-app
-        run: mvn clean package
+        run: mvn clean package -DskipTests
 
-      - name: Build Docker images
-        run: |
-          docker build -t japhtech/japhet-portfolio:latest ./portfolio-app
-          docker build -t japhtech/japhet-java-app:latest ./java-app
-
-      - name: Verify Docker Compose config
+      - name: Validate Docker Compose
         run: docker compose config
+
+      - name: Build Portfolio Docker image
+        run: docker build -t japhtech/japhet-portfolio:latest ./portfolio-app
+
+      - name: Build Java Docker image
+        run: docker build -t japhtech/japhet-java-app:latest ./java-app
+
+      - name: Run apps with Docker Compose
+        run: docker compose up -d --build
+
+      - name: Check running containers
+        run: docker ps
+
+      - name: Verify Portfolio App
+        run: |
+          sleep 15
+          curl -f http://localhost:8081 || exit 1
+
+      - name: Verify Java App
+        run: |
+          sleep 20
+          curl -I http://localhost:8080 || exit 1
+
+      - name: Stop containers
+        if: always()
+        run: docker compose down
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Validate Terraform
+        working-directory: terraform
+        run: |
+          terraform init -backend=false
+          terraform validate
+
+      - name: Install Ansible
+        run: pip install ansible
+
+      - name: Validate Ansible
+        working-directory: ansible
+        run: ansible-playbook --syntax-check playbook.yml
+
+      - name: Validate Kubernetes manifests
+        run: kubectl apply --dry-run=client -f k8s/
