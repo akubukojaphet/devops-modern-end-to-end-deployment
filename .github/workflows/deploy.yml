@@ -7,12 +7,19 @@ on:
 
 jobs:
   devops-pipeline:
+    name: Build, Validate and Test Deployment
     runs-on: ubuntu-latest
 
     steps:
+      # =========================
+      # Checkout Code
+      # =========================
       - name: Checkout source code
         uses: actions/checkout@v4
 
+      # =========================
+      # Build Java App
+      # =========================
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
@@ -23,6 +30,9 @@ jobs:
         working-directory: java-app
         run: mvn clean package -DskipTests
 
+      # =========================
+      # Docker Validation
+      # =========================
       - name: Validate Docker Compose
         run: docker compose config
 
@@ -31,18 +41,24 @@ jobs:
           docker build -t japhtech/japhet-portfolio:latest ./portfolio-app
           docker build -t japhtech/japhet-java-app:latest ./java-app
 
-      - name: Run apps
+      # =========================
+      # Run Containers
+      # =========================
+      - name: Run applications
         run: docker compose up -d --build
 
-      - name: Check containers
+      - name: Show running containers
         run: docker ps
 
+      # =========================
+      # Verify Apps
+      # =========================
       - name: Verify Portfolio App
         run: |
           sleep 15
           curl -f http://localhost:8081 || exit 1
 
-      - name: Verify Java Container (safe)
+      - name: Verify Java Container
         run: |
           sleep 20
           docker ps
@@ -52,6 +68,9 @@ jobs:
         if: always()
         run: docker compose down
 
+      # =========================
+      # Terraform Validation
+      # =========================
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
@@ -62,12 +81,18 @@ jobs:
           terraform init -backend=false
           terraform validate
 
+      # =========================
+      # Ansible Validation
+      # =========================
       - name: Install Ansible
         run: pip install ansible
 
       - name: Validate Ansible
         working-directory: ansible
-        run: ansible-playbook --syntax-check playbook.yml
+        run: ansible-playbook --syntax-check deploy.yml
 
-      - name: Validate Kubernetes
+      # =========================
+      # Kubernetes Validation
+      # =========================
+      - name: Validate Kubernetes manifests
         run: kubectl apply --dry-run=client -f k8s/
