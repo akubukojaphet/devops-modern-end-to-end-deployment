@@ -1,51 +1,98 @@
----
-- name: Configure server and deploy apps with Docker Compose
-  hosts: webservers
-  become: yes
+name: DevOps Modern End-to-End CI/CD Pipeline
 
-  vars:
-    project_path: /home/ubuntu/devops-modern-end-to-end-deployment
+on:
+  push:
+    branches:
+      - main
 
-  tasks:
+jobs:
+  devops-pipeline:
+    name: Build, Validate and Test Deployment
+    runs-on: ubuntu-latest
 
-    - name: Update apt packages
-      apt:
-        update_cache: yes
-        upgrade: yes
+    steps:
+      # =========================
+      # Checkout Code
+      # =========================
+      - name: Checkout source code
+        uses: actions/checkout@v4
 
-    - name: Install required packages
-      apt:
-        name:
-          - docker.io
-          - docker-compose
-          - git
-          - openjdk-17-jdk
-          - maven
-        state: present
+      # =========================
+      # Build Java App
+      # =========================
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
 
-    - name: Start and enable Docker
-      service:
-        name: docker
-        state: started
-        enabled: yes
+      - name: Build Java application
+        working-directory: java-app
+        run: mvn clean package -DskipTests
 
-    - name: Add ubuntu user to docker group
-      user:
-        name: ubuntu
-        groups: docker
-        append: yes
+      # =========================
+      # Docker Validation
+      # =========================
+      - name: Validate Docker Compose
+        run: docker compose config
 
-    - name: Reset SSH connection (apply docker group)
-      meta: reset_connection
+      - name: Build Docker images
+        run: |
+          docker build -t japhtech/japhet-portfolio:latest ./portfolio-app
+          docker build -t japhtech/japhet-java-app:latest ./java-app
 
-    - name: Clone project repository
-      git:
-        repo: "https://github.com/akubukojaphet/devops-modern-end-to-end-deployment.git"
-        dest: "{{ project_path }}"
-        version: main
-        force: yes
+      # =========================
+      # Run Containers
+      # =========================
+      - name: Run applications
+        run: docker compose up -d --build
 
-    - name: Build and run apps using Docker Compose
-      command: docker-compose up -d --build
-      args:
-        chdir: "{{ project_path }}"
+      - name: Show running containers
+        run: docker ps
+
+      # =========================
+      # Verify Apps
+      # =========================
+      - name: Verify Portfolio App
+        run: |
+          sleep 15
+          curl -f http://localhost:8081 || exit 1
+
+      - name: Verify Java Container
+        run: |
+          sleep 20
+          docker ps
+          echo "Java container running"
+
+      - name: Stop containers
+        if: always()
+        run: docker compose down
+
+      # =========================
+      # Terraform Validation
+      # =========================
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Validate Terraform
+        working-directory: terraform
+        run: |
+          terraform fmt -check
+          terraform init -backend=false
+          terraform validate
+
+      # =========================
+      # Ansible Validation
+      # =========================
+      - name: Install Ansible
+        run: pip install ansible
+
+      - name: Validate Ansible
+        working-directory: ansible
+        run: ansible-playbook --syntax-check deploy.yml
+
+      # =========================
+      # Kubernetes Validation
+      # =========================
+      - name: Validate Kubernetes manifests
+        run: kubectl apply --dry-run=client -f k8s/
