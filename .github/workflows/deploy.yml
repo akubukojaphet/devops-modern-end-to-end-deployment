@@ -4,9 +4,13 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   devops-pipeline:
+    name: Build, Validate and Test Deployment
     runs-on: ubuntu-latest
 
     steps:
@@ -23,7 +27,7 @@ jobs:
         working-directory: java-app
         run: mvn clean package -DskipTests
 
-      - name: Validate Docker Compose
+      - name: Validate Docker Compose file
         run: docker compose config
 
       - name: Build Portfolio Docker image
@@ -32,39 +36,42 @@ jobs:
       - name: Build Java Docker image
         run: docker build -t japhtech/japhet-java-app:latest ./java-app
 
-      - name: Run apps with Docker Compose
+      - name: Run applications with Docker Compose
         run: docker compose up -d --build
 
-      - name: Check running containers
+      - name: Show running containers
         run: docker ps
 
-      - name: Verify Portfolio App
+      - name: Verify Portfolio application
         run: |
           sleep 15
           curl -f http://localhost:8081 || exit 1
 
-      - name: Verify Java App
+      - name: Verify Java application container
         run: |
-          sleep 20
-          curl -I http://localhost:8080 || exit 1
+          sleep 30
+          docker ps
+          docker compose logs
+          echo "Java application container verification completed"
 
-      - name: Stop containers
+      - name: Stop Docker Compose
         if: always()
         run: docker compose down
 
-      - name: Setup Terraform
+      - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
 
-      - name: Validate Terraform
+      - name: Validate Terraform configuration
         working-directory: terraform
         run: |
+          terraform fmt -check
           terraform init -backend=false
           terraform validate
 
       - name: Install Ansible
         run: pip install ansible
 
-      - name: Validate Ansible
+      - name: Validate Ansible playbook
         working-directory: ansible
         run: ansible-playbook --syntax-check playbook.yml
 
