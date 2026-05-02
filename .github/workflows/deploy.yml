@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       # =========================
       # Checkout Code
       # =========================
@@ -58,11 +59,10 @@ jobs:
           sleep 15
           curl -f http://localhost:8081 || exit 1
 
-      - name: Verify Java Container
+      - name: Verify Java App
         run: |
           sleep 20
-          docker ps
-          echo "Java container running"
+          curl -f http://localhost:8082 || exit 1
 
       - name: Stop containers
         if: always()
@@ -92,23 +92,19 @@ jobs:
         run: ansible-playbook --syntax-check deploy.yml
 
       # =========================
-      # Kubernetes Validation (FIXED)
+      # Kubernetes Validation
       # =========================
       - name: Validate Kubernetes YAML syntax
         run: |
           python - <<'PY'
           import yaml, glob, sys
-
           files = glob.glob("k8s/*.yml") + glob.glob("k8s/*.yaml")
-
           if not files:
               print("No Kubernetes YAML files found")
               sys.exit(1)
-
           for file in files:
               with open(file) as f:
                   list(yaml.safe_load_all(f))
               print(f"Validated: {file}")
-
           print("Kubernetes YAML syntax validation completed successfully")
           PY
