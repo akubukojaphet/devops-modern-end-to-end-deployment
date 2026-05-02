@@ -53,7 +53,7 @@ resource "aws_security_group" "devops_sg" {
 
 resource "aws_instance" "devops_server" {
   ami                    = "ami-020cba7c55df1f615"
-  instance_type = "t3.micro"
+  instance_type          = "t3.micro"
   key_name               = "demo-kp"
   vpc_security_group_ids = [aws_security_group.devops_sg.id]
 
