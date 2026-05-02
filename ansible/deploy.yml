@@ -1,98 +1,40 @@
-name: DevOps Modern End-to-End CI/CD Pipeline
+---
+- name: Deploy DevOps Final Project Applications
+  hosts: all
+  become: yes
 
-on:
-  push:
-    branches:
-      - main
+  tasks:
+    - name: Update apt packages
+      apt:
+        update_cache: yes
 
-jobs:
-  devops-pipeline:
-    name: Build, Validate and Test Deployment
-    runs-on: ubuntu-latest
+    - name: Install required packages
+      apt:
+        name:
+          - docker.io
+          - docker-compose
+          - python3-pip
+        state: present
 
-    steps:
-      # =========================
-      # Checkout Code
-      # =========================
-      - name: Checkout source code
-        uses: actions/checkout@v4
+    - name: Start and enable Docker
+      service:
+        name: docker
+        state: started
+        enabled: yes
 
-      # =========================
-      # Build Java App
-      # =========================
-      - name: Set up Java 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
+    - name: Create application directory
+      file:
+        path: /opt/devops-final-project
+        state: directory
+        mode: "0755"
 
-      - name: Build Java application
-        working-directory: java-app
-        run: mvn clean package -DskipTests
+    - name: Copy project files to server
+      copy:
+        src: ../
+        dest: /opt/devops-final-project/
+        mode: "0755"
 
-      # =========================
-      # Docker Validation
-      # =========================
-      - name: Validate Docker Compose
-        run: docker compose config
-
-      - name: Build Docker images
-        run: |
-          docker build -t japhtech/japhet-portfolio:latest ./portfolio-app
-          docker build -t japhtech/japhet-java-app:latest ./java-app
-
-      # =========================
-      # Run Containers
-      # =========================
-      - name: Run applications
-        run: docker compose up -d --build
-
-      - name: Show running containers
-        run: docker ps
-
-      # =========================
-      # Verify Apps
-      # =========================
-      - name: Verify Portfolio App
-        run: |
-          sleep 15
-          curl -f http://localhost:8081 || exit 1
-
-      - name: Verify Java Container
-        run: |
-          sleep 20
-          docker ps
-          echo "Java container running"
-
-      - name: Stop containers
-        if: always()
-        run: docker compose down
-
-      # =========================
-      # Terraform Validation
-      # =========================
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-
-      - name: Validate Terraform
-        working-directory: terraform
-        run: |
-          terraform fmt -check
-          terraform init -backend=false
-          terraform validate
-
-      # =========================
-      # Ansible Validation
-      # =========================
-      - name: Install Ansible
-        run: pip install ansible
-
-      - name: Validate Ansible
-        working-directory: ansible
-        run: ansible-playbook --syntax-check deploy.yml
-
-      # =========================
-      # Kubernetes Validation
-      # =========================
-      - name: Validate Kubernetes manifests
-        run: kubectl apply --dry-run=client -f k8s/
+    - name: Run applications with Docker Compose
+      command: docker compose up -d --build
+      args:
+        chdir: /opt/devops-final-project
