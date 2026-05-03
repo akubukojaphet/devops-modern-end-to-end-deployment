@@ -1,6 +1,6 @@
 # 🚀 Modern End-to-End DevOps Deployment Pipeline
 
-A complete DevOps pipeline project demonstrating real-world deployment of two applications using industry-standard tools — from infrastructure provisioning to CI/CD automation and container orchestration.
+A complete DevOps pipeline project demonstrating real-world deployment of two applications using industry-standard tools from infrastructure provisioning to CI/CD automation and container orchestration.
 
 ---
 
@@ -153,6 +153,7 @@ Push to main
 ## 📸 Screenshots
 
 ### ✅ CI/CD Pipeline — All Stages Passed
+The pipeline automatically builds, validates, and tests the applications on every push to the `main` branch.
 <img width="1902" height="827" alt="image" src="https://github.com/user-attachments/assets/ab4ad76e-8d95-4f4b-a6bb-15db33dd0041" />
 
 
